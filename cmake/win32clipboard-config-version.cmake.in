@@ -1,0 +1,15 @@
+# win32clipboard-config-version.cmake - checks version: major must match, minor must be less than or equal
+
+set(PACKAGE_VERSION @GTESTBADGE_VERSION@)
+
+if("${PACKAGE_FIND_VERSION_MAJOR}" EQUAL "@WIN32CLIPBOARD_VERSION_MAJOR@")
+    if ("${PACKAGE_FIND_VERSION_MINOR}" EQUAL "@WIN32CLIPBOARD_VERSION_MINOR@")
+        set(PACKAGE_VERSION_EXACT TRUE)
+    elseif("${PACKAGE_FIND_VERSION_MINOR}" LESS "@WIN32CLIPBOARD_VERSION_MINOR@")
+        set(PACKAGE_VERSION_COMPATIBLE TRUE)
+    else()
+        set(PACKAGE_VERSION_UNSUITABLE TRUE)
+    endif()
+else()
+    set(PACKAGE_VERSION_UNSUITABLE TRUE)
+endif()
