@@ -36,7 +36,8 @@
 
 namespace win32clipboard
 {
-  static UINT gFormatDescriptorBinary     = RegisterClipboardFormat("WIN32CLIPBOARD_BINARY_FORMAT");
+  //Format descriptors for different types of object sent to the clipboard
+  static UINT gFormatDescriptorBinary     = RegisterClipboardFormat("Binary");
   static UINT gFormatDescriptorDropEffect = RegisterClipboardFormat("Preferred DropEffect");
 
   static const std::string CRLF = ra::environment::getLineSeparator();
@@ -113,53 +114,53 @@ namespace win32clipboard
 
   bool Clipboard::isEmpty()
   {
-    bool empty = true;
-
-    //Check if the clipboard contains any of the formats available
+    //Check if the clipboard contains any of the known formats
     for(size_t i=0; i<Clipboard::NUM_FORMATS; i++)
     {
       Clipboard::Format test_format = (Clipboard::Format)i;
       if (contains(test_format))
       {
-        empty = false;
+        return false;
       }
     }
-    return empty;
+    return true;
   }
 
   bool Clipboard::contains(Clipboard::Format iClipboardFormat)
   {
+    if ( !OpenClipboard( DEFAULT_READ_CLIPBOARD_HANDLE ) ) 
+      return false;
+
     bool containsFormat = false;
-    if ( OpenClipboard( DEFAULT_READ_CLIPBOARD_HANDLE ) ) 
+    switch(iClipboardFormat)
     {
-      switch(iClipboardFormat)
+    case Clipboard::FormatText:
       {
-      case Clipboard::FormatText:
-        {
-          HANDLE hData = GetClipboardData(CF_TEXT);
-          containsFormat = (hData != NULL);
-        }
-        break;
-      case Clipboard::FormatImage:
-        {
-          HANDLE hData = GetClipboardData(CF_BITMAP);
-          containsFormat = (hData != NULL);
-        }
-        break;
-      case Clipboard::FormatBinary:
-        {
-          HANDLE hData = GetClipboardData(gFormatDescriptorBinary);
-          containsFormat = (hData != NULL);
-        }
-        break;
-      };
-      CloseClipboard();
-    }
+        HANDLE hData = GetClipboardData(CF_TEXT);
+        containsFormat = (hData != NULL);
+      }
+      break;
+    case Clipboard::FormatImage:
+      {
+        HANDLE hData = GetClipboardData(CF_BITMAP);
+        containsFormat = (hData != NULL);
+      }
+      break;
+    case Clipboard::FormatBinary:
+      {
+        HANDLE hData = GetClipboardData(gFormatDescriptorBinary);
+        containsFormat = (hData != NULL);
+      }
+      break;
+    };
+
+    CloseClipboard();
     return containsFormat;
   }
 
-  void Clipboard::setText(const std::string & iText)
+  bool Clipboard::setText(const std::string & iText)
   {
+    bool status = false;
     if ( OpenClipboard( DEFAULT_WRITE_CLIPBOARD_HANDLE ) ) 
     {
       //replace \n by windows CRLF, if required
@@ -182,72 +183,75 @@ namespace win32clipboard
         GlobalUnlock(hData);
         BOOL emptySuccess = EmptyClipboard();
         SetClipboardData(CF_TEXT, hData);
+
+        status = true;
       }
       CloseClipboard();
     }
+
+    return status;
   }
 
   bool Clipboard::getAsText(std::string & oText)
   {
-    bool success = false;
-    if (contains(Clipboard::FormatText))
+    if ( !OpenClipboard( DEFAULT_READ_CLIPBOARD_HANDLE ) )
+      return false;
+
+    HANDLE hData = GetClipboardData(CF_TEXT);
+    if (hData == NULL)
     {
-      if ( OpenClipboard( DEFAULT_READ_CLIPBOARD_HANDLE ) ) 
-      {
-        HANDLE hData = GetClipboardData(CF_TEXT);
-        void * buffer = GlobalLock( hData );
-        oText = (char*)buffer;
-        GlobalUnlock( hData );
-        CloseClipboard();
-
-        //Replace CRLF by \n so that it is c++ friendly
-        ra::strings::replace(oText, CRLF, "\n");
-
-        success = true;
-      }
+      CloseClipboard();
+      return false;
     }
-    return success;
+
+    void * buffer = GlobalLock( hData );
+    oText = (char*)buffer;
+    GlobalUnlock( hData );
+    CloseClipboard();
+
+    //Replace CRLF by \n so that it is c++ friendly
+    ra::strings::replace(oText, CRLF, "\n");
+
+    return true;
   }
 
-  void Clipboard::setBinary(const MemoryBuffer & iMemoryBuffer)
+  bool Clipboard::setBinary(const MemoryBuffer & iMemoryBuffer)
   {
-    if ( OpenClipboard( DEFAULT_WRITE_CLIPBOARD_HANDLE ) )
-    {
-      //allocate some global memory
-      BOOL emptySuccess = EmptyClipboard();
-      HGLOBAL hMem = GlobalAlloc(GMEM_DDESHARE, iMemoryBuffer.size());
-      memcpy(GlobalLock(hMem), iMemoryBuffer.c_str(), iMemoryBuffer.size());
-      GlobalUnlock(hMem);
+    if ( !OpenClipboard( DEFAULT_WRITE_CLIPBOARD_HANDLE ) )
+      return false;
 
-      //Put it on the clipboard
-      SetClipboardData(gFormatDescriptorBinary, hMem);
+    //flush existing content
+    BOOL emptySuccess = EmptyClipboard();
 
-      CloseClipboard();
-    }
+    //allocate some global memory
+    HGLOBAL hMem = GlobalAlloc(GMEM_DDESHARE, iMemoryBuffer.size());
+    memcpy(GlobalLock(hMem), iMemoryBuffer.c_str(), iMemoryBuffer.size());
+    GlobalUnlock(hMem);
+
+    //Put it on the clipboard
+    SetClipboardData(gFormatDescriptorBinary, hMem);
+
+    CloseClipboard();
+    return true;
   }
 
   bool Clipboard::getAsBinary(MemoryBuffer & oMemoryBuffer)
   {
-    bool success = false;
-    if (contains(Clipboard::FormatBinary))
-    {
-      if ( OpenClipboard( DEFAULT_READ_CLIPBOARD_HANDLE ) )
-      {
-        //get the buffer
-        HANDLE hData = GetClipboardData(gFormatDescriptorBinary);
-        size_t data_size = (size_t)GlobalSize(hData);
-        char * buffer = (char*)GlobalLock( hData );
+    if ( !OpenClipboard( DEFAULT_READ_CLIPBOARD_HANDLE ) )
+      return false;
 
-        //make a local copy
-        oMemoryBuffer.assign(buffer, data_size);
+    //get the buffer
+    HANDLE hData = GetClipboardData(gFormatDescriptorBinary);
+    size_t data_size = (size_t)GlobalSize(hData);
+    char * buffer = (char*)GlobalLock( hData );
 
-        GlobalUnlock( hData );
-        CloseClipboard();
+    //make a local copy
+    oMemoryBuffer.assign(buffer, data_size);
 
-        success = true;
-      }
-    }
-    return success;
+    GlobalUnlock( hData );
+    
+    CloseClipboard();
+    return true;
   }
 
   bool Clipboard::setDragDropFiles(const Clipboard::DragDropType & iDragDropType, const Clipboard::StringVector & iFiles)

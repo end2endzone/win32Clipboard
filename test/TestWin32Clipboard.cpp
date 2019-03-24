@@ -62,10 +62,11 @@ namespace win32clipboard { namespace test
       const char * value = values[i];
       std::string str = value;
 
-      c.setText(str);
+      bool status = c.setText(str);
+      ASSERT_TRUE( status );
     
       std::string text;
-      bool status = c.getAsText(text);
+      status = c.getAsText(text);
       ASSERT_TRUE( status );
 
       ASSERT_EQ( str, text ) << "Failed setting clipboard to value '" << str << "'. The returned value is '" << text << "'.";
@@ -103,10 +104,11 @@ namespace win32clipboard { namespace test
     Clipboard::MemoryBuffer input;
     input.assign((char*)buffer, BUFFER_SIZE);
 
-    c.setBinary(input);
+    bool status = c.setBinary(input);
+    ASSERT_TRUE( status );
 
     Clipboard::MemoryBuffer output;
-    bool status = c.getAsBinary(output);
+    status = c.getAsBinary(output);
     ASSERT_TRUE( status );
 
     //both binary buffer are identical

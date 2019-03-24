@@ -80,9 +80,9 @@ namespace win32clipboard
     virtual void empty();
     virtual bool isEmpty();
     virtual bool contains(Format iClipboardFormat);
-    virtual void setText(const std::string & iText);
+    virtual bool setText(const std::string & iText);
     virtual bool getAsText(std::string & oText); 
-    virtual void setBinary(const MemoryBuffer & iMemoryBuffer);
+    virtual bool setBinary(const MemoryBuffer & iMemoryBuffer);
     virtual bool getAsBinary(MemoryBuffer & oMemoryBuffer);
     virtual bool setDragDropFiles(const DragDropType & iDragDropType, const StringVector & iFiles);
     virtual bool getAsDragDropFiles(DragDropType & oDragDropType, StringVector & oFiles);
