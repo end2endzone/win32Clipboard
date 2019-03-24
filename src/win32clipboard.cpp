@@ -160,36 +160,25 @@ namespace win32clipboard
 
   bool Clipboard::setText(const std::string & iText)
   {
-    bool status = false;
-    if ( OpenClipboard( DEFAULT_WRITE_CLIPBOARD_HANDLE ) ) 
-    {
-      //replace \n by windows CRLF, if required
-      std::string text_copy = iText;
-      bool have_windows_newline = (text_copy.find(CRLF) != std::string::npos);
-      bool have_linux_newline = (text_copy.find("\n") != std::string::npos);
-      if (!have_windows_newline && have_linux_newline)
-      {
-        //text is not CRLF fixed yet
-        ra::strings::replace(text_copy, "\n", CRLF);
-      }
+    if ( !OpenClipboard( DEFAULT_WRITE_CLIPBOARD_HANDLE ) )
+      return false;
 
-      size_t memory_size = text_copy.size()+1; // +1 to include the NULL terminating character
+    //flush existing content
+    BOOL emptySuccess = EmptyClipboard();
 
-      HGLOBAL hData = GlobalAlloc(GMEM_MOVEABLE, memory_size);
-      if (hData != INVALID_HANDLE_VALUE)
-      {
-        void * buffer = GlobalLock(hData);
-        memcpy(buffer, text_copy.c_str(), memory_size);
-        GlobalUnlock(hData);
-        BOOL emptySuccess = EmptyClipboard();
-        SetClipboardData(CF_TEXT, hData);
+    size_t memory_size = iText.size() + 1; // +1 character to include the NULL terminating character
 
-        status = true;
-      }
-      CloseClipboard();
-    }
+    //copy data to global allocated memory
+    HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, memory_size);
+    void * buffer = GlobalLock(hMem);
+    memcpy(buffer, iText.c_str(), memory_size);
+    GlobalUnlock(hMem);
 
-    return status;
+    //put it on the clipboard
+    SetClipboardData(CF_TEXT, hMem);
+
+    CloseClipboard();
+    return true;
   }
 
   bool Clipboard::getAsText(std::string & oText)
@@ -203,15 +192,12 @@ namespace win32clipboard
       CloseClipboard();
       return false;
     }
-
+    size_t data_size = (size_t)GlobalSize(hData);
     void * buffer = GlobalLock( hData );
-    oText = (char*)buffer;
+    oText = (const char*)buffer; //copy the data to output variable
     GlobalUnlock( hData );
+
     CloseClipboard();
-
-    //Replace CRLF by \n so that it is c++ friendly
-    ra::strings::replace(oText, CRLF, "\n");
-
     return true;
   }
 
@@ -223,12 +209,13 @@ namespace win32clipboard
     //flush existing content
     BOOL emptySuccess = EmptyClipboard();
 
-    //allocate some global memory
+    //copy data to global allocated memory
     HGLOBAL hMem = GlobalAlloc(GMEM_DDESHARE, iMemoryBuffer.size());
-    memcpy(GlobalLock(hMem), iMemoryBuffer.c_str(), iMemoryBuffer.size());
+    void * buffer = GlobalLock(hMem);
+    memcpy(buffer, iMemoryBuffer.c_str(), iMemoryBuffer.size());
     GlobalUnlock(hMem);
 
-    //Put it on the clipboard
+    //put it on the clipboard
     SetClipboardData(gFormatDescriptorBinary, hMem);
 
     CloseClipboard();
@@ -242,12 +229,14 @@ namespace win32clipboard
 
     //get the buffer
     HANDLE hData = GetClipboardData(gFormatDescriptorBinary);
+    if (hData == NULL)
+    {
+      CloseClipboard();
+      return false;
+    }
     size_t data_size = (size_t)GlobalSize(hData);
-    char * buffer = (char*)GlobalLock( hData );
-
-    //make a local copy
-    oMemoryBuffer.assign(buffer, data_size);
-
+    void * buffer = GlobalLock( hData );
+    oMemoryBuffer.assign((const char*)buffer, data_size); //copy the data to output variable
     GlobalUnlock( hData );
     
     CloseClipboard();
