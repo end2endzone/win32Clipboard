@@ -10,7 +10,7 @@ echo =======================================================================
 echo Testing project
 echo =======================================================================
 cd /d %APPVEYOR_BUILD_FOLDER%\build\bin\%Configuration%
-shellanything_unittest.exe
+win32clipboard_unittest.exe
 
 ::reset error in case of test case fail
 exit /b 0
