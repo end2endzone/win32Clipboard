@@ -250,194 +250,192 @@ namespace win32clipboard
     //http://read.pudn.com/downloads22/sourcecode/windows/multimedia/73340/ShitClass3/%E7%B1%BB%E5%8C%85/SManageFile.cpp__.htm
 
     //Validate drag drop type
-    if (iDragDropType == Clipboard::DragDropCopy ||
-        iDragDropType == Clipboard::DragDropCut)
-    {
-    }
-    else
+    if (iDragDropType != Clipboard::DragDropCopy && iDragDropType != Clipboard::DragDropCut)
       return false;
 
-    bool success = false;
+    if ( !OpenClipboard( DEFAULT_WRITE_CLIPBOARD_HANDLE ) )
+      return false;
 
-    //Process with setting clipboard
-    if ( OpenClipboard( DEFAULT_WRITE_CLIPBOARD_HANDLE ) ) 
+    //flush existing content
+    BOOL emptySuccess = EmptyClipboard();
+
+    //Register iFiles
     {
-      BOOL emptySuccess = EmptyClipboard();
+      DROPFILES df = {0};
+      df.pFiles = sizeof(DROPFILES);
+      df.pt.x = 0;
+      df.pt.y = 0;
+      df.fNC = FALSE;
+      df.fWide = TRUE; //we will use WIDE CHAR for storing the file paths
 
-      //Register iFiles
-      bool registerFilesSuccess = false;
+      //Build the buffer content
+      MemoryBuffer buff;
+
+      //append the DROPFILES structure
+      buff.assign((const char *)&df, sizeof(df));
+
+      //append each files
+      for(size_t i=0; i<iFiles.size(); i++)
       {
-        DROPFILES dropFiles = {0};
-        dropFiles.pFiles = sizeof(DROPFILES);
-        dropFiles.pt.x = 0;
-        dropFiles.pt.y = 0;
-        dropFiles.fNC = FALSE;
-        dropFiles.fWide = TRUE;
+        const std::string & utf8_file_path = iFiles[i];
 
-        //Build the buffer content
-        MemoryBuffer buff;
+        //Convert utf8 to unicode
+        std::wstring unicode_file_path = utf8_to_unicode(utf8_file_path);
 
-        //append dropFiles
-        buff.assign((const char *)&dropFiles, sizeof(dropFiles));
-
-        //append each files
-        for(size_t i=0; i<iFiles.size(); i++)
-        {
-          const std::string & utf8_file_path = iFiles[i];
-          const size_t utf8_file_path_bytes = utf8_file_path.size();
-
-          //Convert utf8 to unicode
-          std::wstring utf16_file_path = utf8_to_unicode(utf8_file_path);
-
-          //append
-          const char * data_buffer = (const char*)utf16_file_path.c_str();
-          const size_t data_size_bytes = (utf16_file_path.size() + 1) * sizeof(utf16_file_path[0]); // +1 for including the NULL terminating character
-          buff.append(data_buffer, data_size_bytes);
-        }
+        //append
+        const char * data_buffer = (const char*)unicode_file_path.c_str();
+        const size_t data_size_bytes = (unicode_file_path.size() + 1) * sizeof(unicode_file_path[0]); // +1 for including the NULL terminating character
+        buff.append(data_buffer, data_size_bytes);
+      }
         
-        //Append final empty filepath
-        {
-          //Convert utf8 to unicode
-          std::wstring utf16_file_path = utf8_to_unicode("");
-
-          //append
-          const char * data_buffer = (const char*)utf16_file_path.c_str();
-          const size_t data_size_bytes = (utf16_file_path.size() + 1) * sizeof(utf16_file_path[0]); // +1 for including the NULL terminating character
-          buff.append(data_buffer, data_size_bytes);
-        }
-
-        //DragDropCopy local buffer to a global memory buffer
-        HGLOBAL hGblFiles = GlobalAlloc(GMEM_ZEROINIT|GMEM_MOVEABLE|GMEM_DDESHARE, buff.size());
-        LPVOID szData = GlobalLock(hGblFiles);
-        memcpy(szData, buff.c_str(), buff.size());
-        GlobalUnlock(hGblFiles);
-
-        HANDLE hResult = SetClipboardData( CF_HDROP, hGblFiles );
-        registerFilesSuccess = (hResult == hGblFiles);
-          
-        //std::string err = extSystem::getLastErrorMessage();
-        //const char * err2 = err.c_str();
-        //int a = 0;
-      }
-
-      //Register iDragDropType
-      bool registerTypeSuccess = false;
+      //Append final empty filepath
       {
-        HGLOBAL hDropEffect = GlobalAlloc(GMEM_ZEROINIT|GMEM_MOVEABLE|GMEM_DDESHARE,sizeof(DWORD));
-        DWORD * dwDropEffect = (DWORD*)GlobalLock(hDropEffect);
-        if (iDragDropType == Clipboard::DragDropCopy)
-          (*dwDropEffect) = DROPEFFECT_COPY /*| DROPEFFECT_LINK*/;
-        else
-          (*dwDropEffect) = DROPEFFECT_MOVE;
-        GlobalUnlock(hDropEffect);
+        //Convert utf8 to unicode
+        std::wstring unicode_file_path = utf8_to_unicode("");
 
-        HANDLE hResult = SetClipboardData(gFormatDescriptorDropEffect, hDropEffect);
-        registerTypeSuccess = (hResult == hDropEffect);
-          
-        //extString err = extSystem::getLastErrorMessage();
-        //const char * err2 = err.c_str();
-        //int a = 0;
+        //append
+        const char * data_buffer = (const char*)unicode_file_path.c_str();
+        const size_t data_size_bytes = (unicode_file_path.size() + 1) * sizeof(unicode_file_path[0]); // +1 for including the NULL terminating character
+        buff.append(data_buffer, data_size_bytes);
       }
 
-      success = (registerFilesSuccess && registerTypeSuccess);
+      //copy data to global allocated memory
+      HGLOBAL hMem = GlobalAlloc(GMEM_ZEROINIT|GMEM_MOVEABLE|GMEM_DDESHARE, buff.size());
+      void * buffer = GlobalLock(hMem);
+      memcpy(buffer, buff.c_str(), buff.size());
+      GlobalUnlock(hMem);
 
-      CloseClipboard();
+      //put it on the clipboard
+      HANDLE hResult = SetClipboardData( CF_HDROP, hMem );
+      if (hResult != hMem)
+      {
+        CloseClipboard();
+        return false;
+      }
     }
 
-    return success;
+    //Register iDragDropType
+    {
+      HGLOBAL hDropEffect = GlobalAlloc(GMEM_ZEROINIT|GMEM_MOVEABLE|GMEM_DDESHARE,sizeof(DWORD));
+      DWORD * dwDropEffect = (DWORD*)GlobalLock(hDropEffect);
+      if (iDragDropType == Clipboard::DragDropCopy)
+        (*dwDropEffect) = DROPEFFECT_COPY /*| DROPEFFECT_LINK*/;
+      else
+        (*dwDropEffect) = DROPEFFECT_MOVE;
+      GlobalUnlock(hDropEffect);
+
+      HANDLE hResult = SetClipboardData(gFormatDescriptorDropEffect, hDropEffect);
+      if (hResult != hDropEffect)
+      {
+        CloseClipboard();
+        return false;
+      }
+    }
+
+    CloseClipboard();
+    return true;
   }
 
   bool Clipboard::getAsDragDropFiles(DragDropType & oDragDropType, Clipboard::StringVector & oFiles)
   {
-    bool success = false;
     //Invalidate
     oDragDropType = Clipboard::DragDropType(-1);
     oFiles.clear();
 
-    //if (contains(Clipboard::Format::FormatText))
+    if ( !OpenClipboard( DEFAULT_READ_CLIPBOARD_HANDLE ) )
+      return false;
+
+    //Detect if CUT or COPY
     {
-      if ( OpenClipboard( DEFAULT_READ_CLIPBOARD_HANDLE ) )
+      HANDLE hDropEffect = ::GetClipboardData (gFormatDescriptorDropEffect);
+      if (hDropEffect)
       {
-        //Detect if CUT or COPY
+        LPVOID lpResults = GlobalLock(hDropEffect);
         {
-          HANDLE hDropEffect = ::GetClipboardData (gFormatDescriptorDropEffect);
-          if (hDropEffect)
-          {
-            LPVOID lpResults = GlobalLock(hDropEffect);
-            {
-              SIZE_T lBufferSize = GlobalSize(lpResults);
-              DWORD dropEffect = *((DWORD*)lpResults);
-              //if (dropEffect == DROPEFFECT_NONE)
-              //  "NONE:"
-              if (dropEffect & DROPEFFECT_COPY)
-                oDragDropType = DragDropCopy;
-              if (dropEffect & DROPEFFECT_MOVE)
-                oDragDropType = DragDropCut;
-              //if (dropEffect & DROPEFFECT_LINK)
-              //  "LINK:"
-              //if (dropEffect & DROPEFFECT_SCROLL)
-              //  "SCROLL:"
-            }
-            GlobalUnlock(hDropEffect);
-          }
+          SIZE_T lBufferSize = GlobalSize(lpResults);
+          DWORD dropEffect = *((DWORD*)lpResults);
+          //if (dropEffect == DROPEFFECT_NONE)
+          //  "NONE:"
+          if (dropEffect & DROPEFFECT_COPY)
+            oDragDropType = DragDropCopy;
+          else if (dropEffect & DROPEFFECT_MOVE)
+            oDragDropType = DragDropCut;
+          //if (dropEffect & DROPEFFECT_LINK)
+          //  "LINK:"
+          //if (dropEffect & DROPEFFECT_SCROLL)
+          //  "SCROLL:"
         }
+        GlobalUnlock(hDropEffect);
+      }
 
-        //Retreive files
-        HDROP hDrop = (HDROP) ::GetClipboardData (CF_HDROP);
-        if (hDrop != NULL)
-        {
-          LPVOID lpResults = GlobalLock(hDrop);
-          if (lpResults)
-          {
-            SIZE_T lBufferSize = GlobalSize(lpResults);
-              
-            // Find out how many file names the HDROP contains.
-            int nCount = ::DragQueryFile (hDrop, (UINT) -1, NULL, 0);
-
-            if (nCount)
-            {
-              //Find out if files are unicode or ansi
-              DROPFILES df = {0};
-              df = *( ((DROPFILES*)lpResults) );
-              bool isUnicode = (df.fWide == 1);
-
-              // Enumerate the file names.
-              for (int i=0; i<nCount; i++)
-              {
-                std::string file_path;
-
-                if (isUnicode)
-                {
-                  WCHAR szFile[MAX_PATH];
-                  UINT length = ::DragQueryFileW (hDrop, i, szFile, sizeof (szFile) / sizeof (WCHAR));
-                  
-                  std::wstring utf16_file_path = szFile;
-
-                  //Convert from unicode to ansi
-                  file_path = unicode_to_ansi( utf16_file_path );
-                }
-                else
-                {
-                  char szFile[MAX_PATH];
-                  ::DragQueryFileA (hDrop, i, szFile, sizeof (szFile) / sizeof (char));
-                  file_path = szFile;
-                }
-
-                //Add to output files
-                //printf("Reading from clipboard %02d/%02d: %s\n", i+1, nCount, filePath.c_str());
-                oFiles.push_back(file_path);
-              }
-            }
-
-            GlobalUnlock(hDrop);
-
-            success = (oDragDropType != -1) && (oFiles.size() > 0);
-          }
-        }
-          
+      if (oDragDropType == -1)
+      {
+        //unknown drop effect
         CloseClipboard();
-      } 
+        return false;
+      }
     }
-    return success;
+
+    //Retreive files
+    HDROP hDrop = (HDROP) ::GetClipboardData (CF_HDROP);
+    if (hDrop == NULL)
+    {
+      CloseClipboard();
+      return false;
+    }
+
+    LPVOID lpResults = GlobalLock(hDrop);
+    if (hDrop == NULL)
+    {
+      CloseClipboard();
+      return false;
+    }
+
+    SIZE_T lBufferSize = GlobalSize(lpResults);
+              
+    // Find out how many file names the HDROP contains.
+    int nCount = ::DragQueryFile (hDrop, (UINT) -1, NULL, 0);
+    if (nCount == 0)
+    {
+      CloseClipboard();
+      return false;
+    }
+
+    //Find out if files are unicode or ansi
+    DROPFILES df = {0};
+    df = *( ((DROPFILES*)lpResults) );
+    bool isUnicode = (df.fWide == 1);
+
+    // Enumerate the file names.
+    for (int i=0; i<nCount; i++)
+    {
+      std::string file_path;
+
+      if (isUnicode)
+      {
+        WCHAR szFile[MAX_PATH];
+        UINT length = ::DragQueryFileW (hDrop, i, szFile, sizeof (szFile) / sizeof (WCHAR));
+                  
+        std::wstring utf16_file_path = szFile;
+
+        //Convert from unicode to ansi
+        file_path = unicode_to_ansi( utf16_file_path );
+      }
+      else
+      {
+        char szFile[MAX_PATH];
+        ::DragQueryFileA (hDrop, i, szFile, sizeof (szFile) / sizeof (char));
+        file_path = szFile;
+      }
+
+      //Add to output files
+      //printf("Reading from clipboard %02d/%02d: %s\n", i+1, nCount, filePath.c_str());
+      oFiles.push_back(file_path);
+    }
+
+    GlobalUnlock(hDrop);
+          
+    CloseClipboard();
+    return true;
   }
 } //namespace win32clipboard
