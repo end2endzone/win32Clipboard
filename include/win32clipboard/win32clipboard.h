@@ -77,7 +77,7 @@ namespace win32clipboard
     //constants
     static const size_t NUM_FORMATS = 3;
 
-    virtual void empty();
+    virtual bool empty();
     virtual bool isEmpty();
     virtual bool contains(Format iClipboardFormat);
     virtual bool setText(const std::string & iText);

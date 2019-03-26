@@ -33,6 +33,7 @@
 
 #include "rapidassist/strings.h"
 #include "rapidassist/environment.h"
+#include "rapidassist/time_.h"
 
 namespace win32clipboard
 {
@@ -91,6 +92,66 @@ namespace win32clipboard
 	  return wstrTo;
   }
 
+  std::string getLastErrorDescription()
+  {
+    DWORD dwLastError = ::GetLastError();
+    char lpErrorBuffer[10240] = {0};
+    DWORD dwErrorBufferSize = sizeof(lpErrorBuffer);
+    ::FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
+                    NULL,
+                    dwLastError,
+                    MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT),
+                    lpErrorBuffer,
+                    dwErrorBufferSize-1,
+                    NULL);
+    char lpDescBuffer[10240] = {0};
+    sprintf(lpDescBuffer, "Error %d, %s", dwLastError, lpErrorBuffer);
+    return std::string(lpDescBuffer);
+  }
+
+  class ClipboardObject
+  {
+  public:
+    ClipboardObject(HWND hWnd)
+    {
+      mHwnd = hWnd;
+      mOpenStatus = FALSE;
+      mCloseStatus = FALSE;
+
+      //Calling OpenClipboard() following a CloseClipboard() may sometimes fails with "Error 0x00000005, Access is denied."
+      //Retry a maximum of 5 times to open the clipboard
+      for(size_t i=0; i<5 && mOpenStatus == FALSE; i++)
+      {
+        mOpenStatus = OpenClipboard(mHwnd);
+        if (mOpenStatus == FALSE)
+        {
+          std::string error = getLastErrorDescription();
+
+          //Failed opening the clipboard object. Will try again little bit later
+          ra::time::millisleep(50);
+        }
+      }
+    }
+
+    bool isOpened()
+    {
+      return (mOpenStatus != 0);
+    }
+
+    ~ClipboardObject()
+    {
+      if (isOpened())
+      {
+        mCloseStatus = CloseClipboard();
+      }
+    }
+
+  private:
+    HWND mHwnd;
+    BOOL mOpenStatus;
+    BOOL mCloseStatus;
+  };
+
   Clipboard::Clipboard()
   {
   }
@@ -105,11 +166,15 @@ namespace win32clipboard
     return _instance;
   }
 
-  void Clipboard::empty()
+  bool Clipboard::empty()
   {
-    BOOL openSuccess = OpenClipboard( DEFAULT_WRITE_CLIPBOARD_HANDLE ); 
-    BOOL emptySuccess = EmptyClipboard();
-    BOOL closeSuccess = CloseClipboard(); 
+    ClipboardObject obj( DEFAULT_WRITE_CLIPBOARD_HANDLE );
+    if (!obj.isOpened())
+      return false;
+
+    BOOL empty = EmptyClipboard();
+    
+    return (empty == TRUE);
   }
 
   bool Clipboard::isEmpty()
@@ -128,7 +193,8 @@ namespace win32clipboard
 
   bool Clipboard::contains(Clipboard::Format iClipboardFormat)
   {
-    if ( !OpenClipboard( DEFAULT_READ_CLIPBOARD_HANDLE ) ) 
+    ClipboardObject obj( DEFAULT_READ_CLIPBOARD_HANDLE );
+    if (!obj.isOpened())
       return false;
 
     bool containsFormat = false;
@@ -154,92 +220,97 @@ namespace win32clipboard
       break;
     };
 
-    CloseClipboard();
     return containsFormat;
   }
 
   bool Clipboard::setText(const std::string & iText)
   {
-    if ( !OpenClipboard( DEFAULT_WRITE_CLIPBOARD_HANDLE ) )
+    ClipboardObject obj( DEFAULT_WRITE_CLIPBOARD_HANDLE );
+    if (!obj.isOpened())
       return false;
 
     //flush existing content
-    BOOL emptySuccess = EmptyClipboard();
+    if (!EmptyClipboard())
+      return false;
 
     size_t memory_size = iText.size() + 1; // +1 character to include the NULL terminating character
 
     //copy data to global allocated memory
     HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, memory_size);
+    if (hMem == NULL)
+      return false;
     void * buffer = GlobalLock(hMem);
     memcpy(buffer, iText.c_str(), memory_size);
     GlobalUnlock(hMem);
 
     //put it on the clipboard
-    SetClipboardData(CF_TEXT, hMem);
+    HANDLE hData = SetClipboardData(CF_TEXT, hMem);
+    if (hData != hMem)
+      return false;
 
-    CloseClipboard();
     return true;
   }
 
   bool Clipboard::getAsText(std::string & oText)
   {
-    if ( !OpenClipboard( DEFAULT_READ_CLIPBOARD_HANDLE ) )
+    ClipboardObject obj( DEFAULT_READ_CLIPBOARD_HANDLE );
+    if (!obj.isOpened())
       return false;
 
     HANDLE hData = GetClipboardData(CF_TEXT);
     if (hData == NULL)
-    {
-      CloseClipboard();
       return false;
-    }
+
     size_t data_size = (size_t)GlobalSize(hData);
     void * buffer = GlobalLock( hData );
     oText = (const char*)buffer; //copy the data to output variable
     GlobalUnlock( hData );
 
-    CloseClipboard();
     return true;
   }
 
   bool Clipboard::setBinary(const MemoryBuffer & iMemoryBuffer)
   {
-    if ( !OpenClipboard( DEFAULT_WRITE_CLIPBOARD_HANDLE ) )
+    ClipboardObject obj( DEFAULT_WRITE_CLIPBOARD_HANDLE );
+    if (!obj.isOpened())
       return false;
 
     //flush existing content
-    BOOL emptySuccess = EmptyClipboard();
+    if (!EmptyClipboard())
+      return false;
 
     //copy data to global allocated memory
     HGLOBAL hMem = GlobalAlloc(GMEM_DDESHARE, iMemoryBuffer.size());
+    if (hMem == NULL)
+      return false;
     void * buffer = GlobalLock(hMem);
     memcpy(buffer, iMemoryBuffer.c_str(), iMemoryBuffer.size());
     GlobalUnlock(hMem);
 
     //put it on the clipboard
-    SetClipboardData(gFormatDescriptorBinary, hMem);
+    HANDLE hData = SetClipboardData(gFormatDescriptorBinary, hMem);
+    if (hData != hMem)
+      return false;
 
-    CloseClipboard();
     return true;
   }
 
   bool Clipboard::getAsBinary(MemoryBuffer & oMemoryBuffer)
   {
-    if ( !OpenClipboard( DEFAULT_READ_CLIPBOARD_HANDLE ) )
+    ClipboardObject obj( DEFAULT_READ_CLIPBOARD_HANDLE );
+    if (!obj.isOpened())
       return false;
 
     //get the buffer
     HANDLE hData = GetClipboardData(gFormatDescriptorBinary);
     if (hData == NULL)
-    {
-      CloseClipboard();
       return false;
-    }
+
     size_t data_size = (size_t)GlobalSize(hData);
     void * buffer = GlobalLock( hData );
     oMemoryBuffer.assign((const char*)buffer, data_size); //copy the data to output variable
     GlobalUnlock( hData );
     
-    CloseClipboard();
     return true;
   }
 
@@ -253,11 +324,13 @@ namespace win32clipboard
     if (iDragDropType != Clipboard::DragDropCopy && iDragDropType != Clipboard::DragDropCut)
       return false;
 
-    if ( !OpenClipboard( DEFAULT_WRITE_CLIPBOARD_HANDLE ) )
+    ClipboardObject obj( DEFAULT_WRITE_CLIPBOARD_HANDLE );
+    if (!obj.isOpened())
       return false;
 
     //flush existing content
-    BOOL emptySuccess = EmptyClipboard();
+    if (!EmptyClipboard())
+      return false;
 
     //Register iFiles
     {
@@ -301,17 +374,16 @@ namespace win32clipboard
 
       //copy data to global allocated memory
       HGLOBAL hMem = GlobalAlloc(GMEM_ZEROINIT|GMEM_MOVEABLE|GMEM_DDESHARE, buff.size());
+      if (hMem == NULL)
+        return false;
       void * buffer = GlobalLock(hMem);
       memcpy(buffer, buff.c_str(), buff.size());
       GlobalUnlock(hMem);
 
       //put it on the clipboard
-      HANDLE hResult = SetClipboardData( CF_HDROP, hMem );
-      if (hResult != hMem)
-      {
-        CloseClipboard();
+      HANDLE hData = SetClipboardData( CF_HDROP, hMem );
+      if (hData != hMem)
         return false;
-      }
     }
 
     //Register iDragDropType
@@ -324,15 +396,12 @@ namespace win32clipboard
         (*dwDropEffect) = DROPEFFECT_MOVE;
       GlobalUnlock(hDropEffect);
 
-      HANDLE hResult = SetClipboardData(gFormatDescriptorDropEffect, hDropEffect);
-      if (hResult != hDropEffect)
-      {
-        CloseClipboard();
+      //put it on the clipboard
+      HANDLE hData = SetClipboardData( gFormatDescriptorDropEffect, hDropEffect );
+      if (hData != hDropEffect)
         return false;
-      }
     }
 
-    CloseClipboard();
     return true;
   }
 
@@ -342,7 +411,8 @@ namespace win32clipboard
     oDragDropType = Clipboard::DragDropType(-1);
     oFiles.clear();
 
-    if ( !OpenClipboard( DEFAULT_READ_CLIPBOARD_HANDLE ) )
+    ClipboardObject obj( DEFAULT_READ_CLIPBOARD_HANDLE );
+    if (!obj.isOpened())
       return false;
 
     //Detect if CUT or COPY
@@ -371,7 +441,6 @@ namespace win32clipboard
       if (oDragDropType == -1)
       {
         //unknown drop effect
-        CloseClipboard();
         return false;
       }
     }
@@ -379,27 +448,18 @@ namespace win32clipboard
     //Retreive files
     HDROP hDrop = (HDROP) ::GetClipboardData (CF_HDROP);
     if (hDrop == NULL)
-    {
-      CloseClipboard();
       return false;
-    }
 
     LPVOID lpResults = GlobalLock(hDrop);
     if (hDrop == NULL)
-    {
-      CloseClipboard();
       return false;
-    }
 
     SIZE_T lBufferSize = GlobalSize(lpResults);
               
     // Find out how many file names the HDROP contains.
     int nCount = ::DragQueryFile (hDrop, (UINT) -1, NULL, 0);
     if (nCount == 0)
-    {
-      CloseClipboard();
       return false;
-    }
 
     //Find out if files are unicode or ansi
     DROPFILES df = {0};
@@ -435,7 +495,6 @@ namespace win32clipboard
 
     GlobalUnlock(hDrop);
           
-    CloseClipboard();
     return true;
   }
 } //namespace win32clipboard

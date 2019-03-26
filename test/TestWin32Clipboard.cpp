@@ -78,9 +78,9 @@ namespace win32clipboard { namespace test
     Clipboard & c = Clipboard::getInstance();
 
     static const std::string SAMPLE_TEXT = "empty";
-    c.setText(SAMPLE_TEXT);
+    ASSERT_TRUE( c.setText(SAMPLE_TEXT) );
 
-    c.empty();
+    ASSERT_TRUE( c.empty() );
 
     ASSERT_TRUE( c.isEmpty() );
 
