@@ -56,7 +56,18 @@ namespace win32clipboard
   /// <remarks>The function is inspired by https://gist.github.com/pezy/8571764 </remarks>
   std::wstring ansi_to_unicode(const std::string & str);
   
-
+  /// <summary>Converts the encoding of the given utf8 string to ansi.</summary>
+  /// <param name="wstr">The utf8 encoded string.</param>
+  /// <returns>An ansi encoded string.</returns>
+  /// <remarks>The function is inspired by https://gist.github.com/pezy/8571764 </remarks>
+  std::string utf8_to_ansi(const std::string & str);
+ 
+  /// <summary>Converts the encoding of the given utf8 string to ansi.</summary>
+  /// <param name="wstr">The ansi encoded string.</param>
+  /// <returns>An utf8 encoded string.</returns>
+  /// <remarks>The function is inspired by https://gist.github.com/pezy/8571764 </remarks>
+  std::string ansi_to_utf8(const std::string & str);
+ 
   class Clipboard
   {
   private:
