@@ -28,7 +28,7 @@
 
 #include <gtest/gtest.h>
 
-#include "rapidassist/gtesthelp.h"
+#include "rapidassist/environment.h"
 
 using namespace ra;
 
@@ -36,8 +36,8 @@ int main(int argc, char **argv)
 {
   //define default values for xml output report
   std::string outputXml = "xml:" "win32clipboard_unittest";
-  outputXml += (ra::gtesthelp::isProcessorX86() ? ".x86" : ".x64");
-  outputXml += (ra::gtesthelp::isDebugCode() ? ".debug" : ".release");
+  outputXml += (ra::environment::IsProcess32Bit() ? ".x86" : ".x64");
+  outputXml += (ra::environment::IsConfigurationDebug() ? ".debug" : ".release");
   outputXml += ".xml";
   ::testing::GTEST_FLAG(output) = outputXml;
 

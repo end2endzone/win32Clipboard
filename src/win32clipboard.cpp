@@ -33,7 +33,7 @@
 
 #include "rapidassist/strings.h"
 #include "rapidassist/environment.h"
-#include "rapidassist/time_.h"
+#include "rapidassist/timing.h"
 
 namespace win32clipboard
 {
@@ -41,7 +41,7 @@ namespace win32clipboard
   static UINT gFormatDescriptorBinary     = RegisterClipboardFormat("Binary");
   static UINT gFormatDescriptorDropEffect = RegisterClipboardFormat("Preferred DropEffect");
 
-  static const std::string CRLF = ra::environment::getLineSeparator();
+  static const std::string CRLF = ra::environment::GetLineSeparator();
   static const std::string  EMPTY_STRING;
   static const std::wstring EMPTY_WIDE_STRING;
 
@@ -146,7 +146,7 @@ namespace win32clipboard
           std::string error = getLastErrorDescription();
 
           //Failed opening the clipboard object. Will try again little bit later
-          ra::time::millisleep(50);
+          ra::timing::Millisleep(50);
         }
       }
     }

@@ -26,7 +26,7 @@
 
 #include "win32clipboard/win32clipboard.h"
 
-#include "rapidassist/gtesthelp.h"
+#include "rapidassist/testing.h"
 
 using namespace win32clipboard;
 

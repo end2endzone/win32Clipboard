@@ -26,10 +26,10 @@
 
 #include "win32clipboard/win32clipboard.h"
 
-#include "rapidassist/gtesthelp.h"
+#include "rapidassist/testing.h"
 #include "rapidassist/filesystem.h"
 #include "rapidassist/environment.h"
-#include "rapidassist/time_.h"
+#include "rapidassist/timing.h"
 
 using namespace win32clipboard;
 
