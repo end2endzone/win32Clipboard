@@ -32,40 +32,52 @@ namespace win32clipboard
 {
   //global functions
 
-  /// <summary>Converts the encoding of the given unicode string to utf8.</summary>
-  /// <param name="wstr">The unicode encoded string.</param>
-  /// <returns>An utf8 encoded string.</returns>
-  /// <remarks>The function is inspired by https://gist.github.com/pezy/8571764 </remarks>
+  /// <summary>
+  /// Convert a wide-character-unicode string to an utf8-encoded string.
+  /// </summary>
+  /// <param name="wstr">The wide-character-unicode string to convert.</param>
+  /// <returns>Returns an utf8-encoded string. Returns an empty string on failure.</returns>
+  /// <remarks>If a non-empty input string is given as input, an empty output string must be considered a decoding or encoding error.< / remarks>
   std::string unicode_to_utf8(const std::wstring & wstr);
-
-  /// <summary>Converts the encoding of the given utf8 string to unicode.</summary>
-  /// <param name="wstr">The utf8 encoded string.</param>
-  /// <returns>An unicode encoded string.</returns>
-  /// <remarks>The function is inspired by https://gist.github.com/pezy/8571764 </remarks>
+ 
+  /// <summary>
+  /// Convert an utf8-encoded string to a wide-character-unicode string.
+  /// </summary>
+  /// <param name="str">The utf8-encoded string to convert.</param>
+  /// <returns>Returns a wide-character-unicode string. Returns an empty string on failure.</returns>
+  /// <remarks>If a non-empty input string is given as input, an empty output string must be considered a decoding or encoding error.< / remarks>
   std::wstring utf8_to_unicode(const std::string & str);
-
-  /// <summary>Converts the encoding of the given unicode string to ansi.</summary>
-  /// <param name="wstr">The unicode encoded string.</param>
-  /// <returns>An ansi encoded string.</returns>
-  /// <remarks>The function is inspired by https://gist.github.com/pezy/8571764 </remarks>
+ 
+  /// <summary>
+  /// Convert a wide-character-unicode string to an ansi-encoded string.
+  /// </summary>
+  /// <param name="str">The wide-character-unicode string to convert.</param>
+  /// <returns>Returns an ansi-encoded string. Returns an empty string on failure.</returns>
+  /// <remarks>If a non-empty input string is given as input, an empty output string must be considered a decoding or encoding error.< / remarks>
   std::string unicode_to_ansi(const std::wstring & wstr);
-
-  /// <summary>Converts the encoding of the given utf8 string to ansi.</summary>
-  /// <param name="wstr">The ansi encoded string.</param>
-  /// <returns>An unicode encoded string.</returns>
-  /// <remarks>The function is inspired by https://gist.github.com/pezy/8571764 </remarks>
+ 
+  /// <summary>
+  /// Convert an ansi-encoded string to a wide-character-unicode string.
+  /// </summary>
+  /// <param name="str">The ansi-encoded string to convert.</param>
+  /// <returns>Returns a wide-character-unicode string. Returns an empty string on failure.</returns>
+  /// <remarks>If a non-empty input string is given as input, an empty output string must be considered a decoding or encoding error.< / remarks>
   std::wstring ansi_to_unicode(const std::string & str);
-  
-  /// <summary>Converts the encoding of the given utf8 string to ansi.</summary>
-  /// <param name="wstr">The utf8 encoded string.</param>
-  /// <returns>An ansi encoded string.</returns>
-  /// <remarks>The function is inspired by https://gist.github.com/pezy/8571764 </remarks>
+ 
+  /// <summary>
+  /// Convert an utf8-encoded string to an ansi-encoded string.
+  /// </summary>
+  /// <param name="str">The utf8-encoded string to convert.</param>
+  /// <returns>Returns an ansi-encoded string. Returns an empty string on failure.</returns>
+  /// <remarks>If a non-empty input string is given as input, an empty output string must be considered a decoding or encoding error.< / remarks>
   std::string utf8_to_ansi(const std::string & str);
  
-  /// <summary>Converts the encoding of the given utf8 string to ansi.</summary>
-  /// <param name="wstr">The ansi encoded string.</param>
-  /// <returns>An utf8 encoded string.</returns>
-  /// <remarks>The function is inspired by https://gist.github.com/pezy/8571764 </remarks>
+  /// <summary>
+  /// Convert an ansi-encoded string to an utf8-encoded string.
+  /// </summary>
+  /// <param name="str">The ansi-encoded string to convert.</param>
+  /// <returns>Returns an utf8-encoded string. Returns an empty string on failure.</returns>
+  /// <remarks>If a non-empty input string is given as input, an empty output string must be considered a decoding or encoding error.< / remarks>
   std::string ansi_to_utf8(const std::string & str);
  
   class Clipboard
@@ -78,7 +90,7 @@ namespace win32clipboard
     static Clipboard & getInstance();
 
     //enums
-    enum Format { FormatText, FormatImage, FormatBinary }; 
+    enum Format { FormatText, FormatUnicode, FormatImage, FormatBinary }; 
     enum DragDropType {DragDropCopy, DragDropCut};
 
     //typedefs
@@ -93,6 +105,8 @@ namespace win32clipboard
     virtual bool contains(Format iClipboardFormat);
     virtual bool setText(const std::string & iText);
     virtual bool getAsText(std::string & oText); 
+    virtual bool setUnicode(const std::wstring & iText);
+    virtual bool getAsUnicode(std::wstring & oText); 
     virtual bool setBinary(const MemoryBuffer & iMemoryBuffer);
     virtual bool getAsBinary(MemoryBuffer & oMemoryBuffer);
     virtual bool setDragDropFiles(const DragDropType & iDragDropType, const StringVector & iFiles);

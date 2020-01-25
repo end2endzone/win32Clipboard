@@ -73,6 +73,35 @@ namespace win32clipboard { namespace test
     }
   }
   //--------------------------------------------------------------------------------------------------
+  TEST_F(TestWin32Clipboard, testSetGetUnicode)
+  {
+    Clipboard & c = Clipboard::getInstance();
+ 
+    static const wchar_t * values[] = {
+      L"hello world",
+      L"foo",
+      L"bar",
+    };
+    static const size_t num_values = sizeof(values) / sizeof(values[0]);
+ 
+    c.empty();
+ 
+    for (size_t i = 0; i < num_values; i++)
+    {
+      const wchar_t * value = values[i];
+      std::wstring str = value;
+ 
+      bool status = c.setUnicode(str);
+      ASSERT_TRUE(status);
+ 
+      std::wstring text;
+      status = c.getAsUnicode(text);
+      ASSERT_TRUE(status);
+ 
+      ASSERT_EQ(str, text) << "Failed setting clipboard to value '" << win32clipboard::unicode_to_ansi(str) << "'. The returned value is '" << win32clipboard::unicode_to_ansi(text) << "'.";
+    }
+  }
+  //--------------------------------------------------------------------------------------------------
   TEST_F(TestWin32Clipboard, testEmpty)
   {
     Clipboard & c = Clipboard::getInstance();

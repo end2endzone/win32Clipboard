@@ -1,6 +1,6 @@
 Changes for 0.3.0
 
-N/A
+* Fixed issue #01: Support for Windows Unicode (a.k.a. UTF-16).
 
 
 Changes for 0.2.0

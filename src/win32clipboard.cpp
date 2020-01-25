@@ -224,6 +224,12 @@ namespace win32clipboard
         containsFormat = (hData != NULL);
       }
       break;
+    case Clipboard::FormatUnicode:
+      {
+        HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+        containsFormat = (hData != NULL);
+      }
+      break;
     case Clipboard::FormatImage:
       {
         HANDLE hData = GetClipboardData(CF_BITMAP);
@@ -241,7 +247,7 @@ namespace win32clipboard
     return containsFormat;
   }
 
-  bool Clipboard::setText(const std::string & iText)
+  template <typename T> inline bool setTextT(UINT uFormat, const T* str, size_t length)
   {
     ClipboardObject obj( DEFAULT_WRITE_CLIPBOARD_HANDLE );
     if (!obj.isOpened())
@@ -251,22 +257,27 @@ namespace win32clipboard
     if (!EmptyClipboard())
       return false;
 
-    size_t memory_size = iText.size() + 1; // +1 character to include the NULL terminating character
+    size_t memory_size = (length+1)*sizeof(T); // +1 character to include the NULL terminating character
 
     //copy data to global allocated memory
     HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, memory_size);
     if (hMem == NULL)
       return false;
     void * buffer = GlobalLock(hMem);
-    memcpy(buffer, iText.c_str(), memory_size);
+    memcpy(buffer, str, memory_size);
     GlobalUnlock(hMem);
 
     //put it on the clipboard
-    HANDLE hData = SetClipboardData(CF_TEXT, hMem);
+    HANDLE hData = SetClipboardData(uFormat, hMem);
     if (hData != hMem)
       return false;
 
     return true;
+  }
+ 
+  bool Clipboard::setText(const std::string & iText)
+  {
+    return setTextT<char>(CF_TEXT, iText.data(), iText.length());
   }
 
   bool Clipboard::getAsText(std::string & oText)
@@ -280,9 +291,34 @@ namespace win32clipboard
       return false;
 
     size_t data_size = (size_t)GlobalSize(hData);
-    void * buffer = GlobalLock( hData );
-    oText = (const char*)buffer; //copy the data to output variable
+    size_t count = data_size / sizeof(char);
+    const char* text_buffer = (const char*)GlobalLock(hData);
+    oText.assign(text_buffer, count-1); //copy the data to output variable, minus the last \0 character
     GlobalUnlock( hData );
+
+    return true;
+  }
+
+  bool Clipboard::setUnicode(const std::wstring & iText)
+  {
+    return setTextT<wchar_t>(CF_UNICODETEXT, iText.data(), iText.length());
+  }
+
+  bool Clipboard::getAsUnicode(std::wstring & oText)
+  {
+    ClipboardObject obj(DEFAULT_READ_CLIPBOARD_HANDLE);
+    if (!obj.isOpened())
+      return false;
+
+    HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+    if (hData == NULL)
+      return false;
+
+    size_t data_size = (size_t)GlobalSize(hData);
+    size_t count = data_size / sizeof(wchar_t);
+    const wchar_t* text_buffer = (const wchar_t*)GlobalLock(hData);
+    oText.assign(text_buffer, count- 1); //copy the data to output variable, minus the last \0 character
+    GlobalUnlock(hData);
 
     return true;
   }
