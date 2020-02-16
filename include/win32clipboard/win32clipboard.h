@@ -135,16 +135,79 @@ namespace win32clipboard
     //constants
     static const size_t NUM_FORMATS = 4;
 
+    /// <summary>
+    /// Clear the clipboard.
+    /// </summary>
+    /// <returns>Returns true if the function is successful. Returns false otherwise.</returns>
     virtual bool empty();
+
+    /// <summary>
+    /// Returns true if the clipboard is empty.
+    /// </summary>
+    /// <returns>Returns true if the clipboard is empty. Returns false otherwise.</returns>
     virtual bool isEmpty();
+
+    /// <summary>
+    /// Query the clipboard to know if it contains the given format.
+    /// </summary>
+    /// <param name="iClipboardFormat">The format to query.</param>
+    /// <returns>Returns true if the clipboard constains a specific format.</returns>
     virtual bool contains(Format iClipboardFormat);
+
+    /// <summary>
+    /// Assign the given text value to the clipboard.
+    /// </summary>
+    /// <param name="iText">The text value to set to the clipboard.</param>
+    /// <returns>Returns true if the function is successful. Returns false otherwise.</returns>
     virtual bool setText(const std::string & iText);
+
+    /// <summary>
+    /// Provides the current text value of the clipboard.
+    /// </summary>
+    /// <param name="oText">The output text value of the clipboard.</param>
+    /// <returns>Returns true if the function is successful. Returns false otherwise.</returns>
     virtual bool getAsText(std::string & oText);
+
+    /// <summary>
+    /// Assign the given unicode text value to the clipboard.
+    /// </summary>
+    /// <param name="iText">The unicode text value to set to the clipboard.</param>
+    /// <returns>Returns true if the function is successful. Returns false otherwise.</returns>
     virtual bool setUnicode(const std::wstring & iText);
+
+    /// <summary>
+    /// Provides the current unicode text value of the clipboard.
+    /// </summary>
+    /// <param name="oText">The output unicode text value of the clipboard.</param>
+    /// <returns>Returns true if the function is successful. Returns false otherwise.</returns>
     virtual bool getAsUnicode(std::wstring & oText);
+
+    /// <summary>
+    /// Assign the given binary data to the clipboard.
+    /// </summary>
+    /// <param name="iMemoryBuffer">The binary data to set to the clipboard.</param>
+    /// <returns>Returns true if the function is successful. Returns false otherwise.</returns>
     virtual bool setBinary(const MemoryBuffer & iMemoryBuffer);
+
+    /// <summary>
+    /// Provides the current binary data of the clipboard.
+    /// </summary>
+    /// <param name="oText">The output binary data of the clipboard.</param>
+    /// <returns>Returns true if the function is successful. Returns false otherwise.</returns>
     virtual bool getAsBinary(MemoryBuffer & oMemoryBuffer);
+
+    /// <summary>
+    /// Assign the given file operation and list of files to the clipboard.
+    /// </summary>
+    /// <param name="iMemoryBuffer">The file operation and list of files to set to the clipboard.</param>
+    /// <returns>Returns true if the function is successful. Returns false otherwise.</returns>
     virtual bool setDragDropFiles(const DragDropType & iDragDropType, const StringVector & iFiles);
+
+    /// <summary>
+    /// Provides the current file operation and list of files set to the clipboard.
+    /// </summary>
+    /// <param name="oText">The output file operation and list of files of the clipboard.</param>
+    /// <returns>Returns true if the function is successful. Returns false otherwise.</returns>
     virtual bool getAsDragDropFiles(DragDropType & oDragDropType, StringVector & oFiles);
 
   };

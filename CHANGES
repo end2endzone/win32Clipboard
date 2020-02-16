@@ -1,6 +1,7 @@
 Changes for 0.3.0
 
 * Fixed issue #01: Support for Windows Unicode (a.k.a. UTF-16).
+* Fixed issue #02: Missing documentation for Clipboard class.
 
 
 Changes for 0.2.0
