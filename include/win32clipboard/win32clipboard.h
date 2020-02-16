@@ -125,7 +125,7 @@ namespace win32clipboard
     static Clipboard & getInstance();
 
     //enums
-    enum Format { FormatText, FormatUnicode, FormatImage, FormatBinary }; 
+    enum Format { FormatText, FormatUnicode, FormatImage, FormatBinary };
     enum DragDropType {DragDropCopy, DragDropCut};
 
     //typedefs
@@ -133,15 +133,15 @@ namespace win32clipboard
     typedef std::string MemoryBuffer;
 
     //constants
-    static const size_t NUM_FORMATS = 3;
+    static const size_t NUM_FORMATS = 4;
 
     virtual bool empty();
     virtual bool isEmpty();
     virtual bool contains(Format iClipboardFormat);
     virtual bool setText(const std::string & iText);
-    virtual bool getAsText(std::string & oText); 
+    virtual bool getAsText(std::string & oText);
     virtual bool setUnicode(const std::wstring & iText);
-    virtual bool getAsUnicode(std::wstring & oText); 
+    virtual bool getAsUnicode(std::wstring & oText);
     virtual bool setBinary(const MemoryBuffer & iMemoryBuffer);
     virtual bool getAsBinary(MemoryBuffer & oMemoryBuffer);
     virtual bool setDragDropFiles(const DragDropType & iDragDropType, const StringVector & iFiles);
