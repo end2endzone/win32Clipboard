@@ -1,7 +1,11 @@
 Changes for 0.3.0
 
+**This version contains breaking changes!**
+**Function names now follows *[Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html#Function_Names)* naming rules: functions start with a capital letter and have a capital letter for each new word.**
+
 * Fixed issue #01: Support for Windows Unicode (a.k.a. UTF-16).
 * Fixed issue #02: Missing documentation for Clipboard class.
+* Fixed issue #03: Use Google's C++ Style Guide.
 
 
 Changes for 0.2.0

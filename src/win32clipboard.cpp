@@ -307,13 +307,13 @@ namespace win32clipboard
   {
   }
 
-  Clipboard & Clipboard::getInstance()
+  Clipboard & Clipboard::GetInstance()
   {
     static Clipboard _instance;
     return _instance;
   }
 
-  bool Clipboard::empty()
+  bool Clipboard::Empty()
   {
     ClipboardObject obj( DEFAULT_WRITE_CLIPBOARD_HANDLE );
     if (!obj.isOpened())
@@ -324,13 +324,13 @@ namespace win32clipboard
     return (empty == TRUE);
   }
 
-  bool Clipboard::isEmpty()
+  bool Clipboard::IsEmpty()
   {
-    //Check if the clipboard contains any of the known formats
+    //Check if the clipboard Contains any of the known formats
     for(size_t i=0; i<Clipboard::NUM_FORMATS; i++)
     {
       Clipboard::Format test_format = (Clipboard::Format)i;
-      if (contains(test_format))
+      if (Contains(test_format))
       {
         return false;
       }
@@ -338,7 +338,7 @@ namespace win32clipboard
     return true;
   }
 
-  bool Clipboard::contains(Clipboard::Format iClipboardFormat)
+  bool Clipboard::Contains(Clipboard::Format iClipboardFormat)
   {
     ClipboardObject obj( DEFAULT_READ_CLIPBOARD_HANDLE );
     if (!obj.isOpened())
@@ -404,12 +404,12 @@ namespace win32clipboard
     return true;
   }
  
-  bool Clipboard::setText(const std::string & iText)
+  bool Clipboard::SetText(const std::string & iText)
   {
     return setTextT<char>(CF_TEXT, iText.data(), iText.length());
   }
 
-  bool Clipboard::getAsText(std::string & oText)
+  bool Clipboard::GetAsText(std::string & oText)
   {
     ClipboardObject obj( DEFAULT_READ_CLIPBOARD_HANDLE );
     if (!obj.isOpened())
@@ -428,12 +428,12 @@ namespace win32clipboard
     return true;
   }
 
-  bool Clipboard::setUnicode(const std::wstring & iText)
+  bool Clipboard::SetTextUnicode(const std::wstring & iText)
   {
     return setTextT<wchar_t>(CF_UNICODETEXT, iText.data(), iText.length());
   }
 
-  bool Clipboard::getAsUnicode(std::wstring & oText)
+  bool Clipboard::GetAsTextUnicode(std::wstring & oText)
   {
     ClipboardObject obj(DEFAULT_READ_CLIPBOARD_HANDLE);
     if (!obj.isOpened())
@@ -452,7 +452,7 @@ namespace win32clipboard
     return true;
   }
 
-  bool Clipboard::setBinary(const MemoryBuffer & iMemoryBuffer)
+  bool Clipboard::SetBinary(const MemoryBuffer & iMemoryBuffer)
   {
     ClipboardObject obj( DEFAULT_WRITE_CLIPBOARD_HANDLE );
     if (!obj.isOpened())
@@ -478,7 +478,7 @@ namespace win32clipboard
     return true;
   }
 
-  bool Clipboard::getAsBinary(MemoryBuffer & oMemoryBuffer)
+  bool Clipboard::GetAsBinary(MemoryBuffer & oMemoryBuffer)
   {
     ClipboardObject obj( DEFAULT_READ_CLIPBOARD_HANDLE );
     if (!obj.isOpened())
@@ -497,7 +497,7 @@ namespace win32clipboard
     return true;
   }
 
-  bool Clipboard::setDragDropFiles(const Clipboard::DragDropType & iDragDropType, const Clipboard::StringVector & iFiles)
+  bool Clipboard::SetDragDropFiles(const Clipboard::DragDropType & iDragDropType, const Clipboard::StringVector & iFiles)
   {
     //http://support.microsoft.com/kb/231721/en-us
     //http://aclacl.brinkster.net/MFC/ch19b.htm
@@ -588,7 +588,7 @@ namespace win32clipboard
     return true;
   }
 
-  bool Clipboard::getAsDragDropFiles(DragDropType & oDragDropType, Clipboard::StringVector & oFiles)
+  bool Clipboard::GetAsDragDropFiles(DragDropType & oDragDropType, Clipboard::StringVector & oFiles)
   {
     //Invalidate
     oDragDropType = Clipboard::DragDropType(-1);
@@ -639,7 +639,7 @@ namespace win32clipboard
 
     SIZE_T lBufferSize = GlobalSize(lpResults);
               
-    // Find out how many file names the HDROP contains.
+    // Find out how many file names the HDROP Contains.
     int nCount = ::DragQueryFile (hDrop, (UINT) -1, NULL, 0);
     if (nCount == 0)
       return false;

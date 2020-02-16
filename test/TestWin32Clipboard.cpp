@@ -46,7 +46,7 @@ namespace win32clipboard { namespace test
   //--------------------------------------------------------------------------------------------------
   TEST_F(TestWin32Clipboard, testSetGetText)
   {
-    Clipboard & c = Clipboard::getInstance();
+    Clipboard & c = Clipboard::GetInstance();
 
     static const char * values[] = {
       "hello world",
@@ -55,18 +55,18 @@ namespace win32clipboard { namespace test
     };
     static const size_t num_values = sizeof(values) / sizeof(values[0]);
 
-    c.empty();
+    c.Empty();
 
     for(size_t i=0; i<num_values; i++)
     {
       const char * value = values[i];
       std::string str = value;
 
-      bool status = c.setText(str);
+      bool status = c.SetText(str);
       ASSERT_TRUE( status );
     
       std::string text;
-      status = c.getAsText(text);
+      status = c.GetAsText(text);
       ASSERT_TRUE( status );
 
       ASSERT_EQ( str, text ) << "Failed setting clipboard to value '" << str << "'. The returned value is '" << text << "'.";
@@ -75,7 +75,7 @@ namespace win32clipboard { namespace test
   //--------------------------------------------------------------------------------------------------
   TEST_F(TestWin32Clipboard, testSetGetUnicode)
   {
-    Clipboard & c = Clipboard::getInstance();
+    Clipboard & c = Clipboard::GetInstance();
  
     static const wchar_t * values[] = {
       L"hello world",
@@ -84,18 +84,18 @@ namespace win32clipboard { namespace test
     };
     static const size_t num_values = sizeof(values) / sizeof(values[0]);
  
-    c.empty();
+    c.Empty();
  
     for (size_t i = 0; i < num_values; i++)
     {
       const wchar_t * value = values[i];
       std::wstring str = value;
  
-      bool status = c.setUnicode(str);
+      bool status = c.SetTextUnicode(str);
       ASSERT_TRUE(status);
  
       std::wstring text;
-      status = c.getAsUnicode(text);
+      status = c.GetAsTextUnicode(text);
       ASSERT_TRUE(status);
  
       ASSERT_EQ(str, text) << "Failed setting clipboard to value '" << win32clipboard::unicode_to_ansi(str) << "'. The returned value is '" << win32clipboard::unicode_to_ansi(text) << "'.";
@@ -104,23 +104,23 @@ namespace win32clipboard { namespace test
   //--------------------------------------------------------------------------------------------------
   TEST_F(TestWin32Clipboard, testEmpty)
   {
-    Clipboard & c = Clipboard::getInstance();
+    Clipboard & c = Clipboard::GetInstance();
 
     static const std::string SAMPLE_TEXT = "empty";
-    ASSERT_TRUE( c.setText(SAMPLE_TEXT) );
+    ASSERT_TRUE( c.SetText(SAMPLE_TEXT) );
 
-    ASSERT_TRUE( c.empty() );
+    ASSERT_TRUE( c.Empty() );
 
-    ASSERT_TRUE( c.isEmpty() );
+    ASSERT_TRUE( c.IsEmpty() );
 
     std::string text;
-    bool status = c.getAsText(text);
+    bool status = c.GetAsText(text);
     ASSERT_FALSE( status );
   }
   //--------------------------------------------------------------------------------------------------
   TEST_F(TestWin32Clipboard, testSetBinary)
   {
-    Clipboard & c = Clipboard::getInstance();
+    Clipboard & c = Clipboard::GetInstance();
 
     //initialize a binary buffer
     static const size_t BUFFER_SIZE = 1024;
@@ -133,11 +133,11 @@ namespace win32clipboard { namespace test
     Clipboard::MemoryBuffer input;
     input.assign((char*)buffer, BUFFER_SIZE);
 
-    bool status = c.setBinary(input);
+    bool status = c.SetBinary(input);
     ASSERT_TRUE( status );
 
     Clipboard::MemoryBuffer output;
-    status = c.getAsBinary(output);
+    status = c.GetAsBinary(output);
     ASSERT_TRUE( status );
 
     //both binary buffer are identical
@@ -146,19 +146,19 @@ namespace win32clipboard { namespace test
     {
       char c1 = buffer[i];
       char c2 = output[i];
-      ASSERT_EQ( c1, c2 ) << "Failed using getAsBinary() at offset '" << i << "'. Expecting character " << (int)c1 << " (decimal) but got character " << (int)c2 << " (decimal).";
+      ASSERT_EQ( c1, c2 ) << "Failed using GetAsBinary() at offset '" << i << "'. Expecting character " << (int)c1 << " (decimal) but got character " << (int)c2 << " (decimal).";
     }
   }
   //--------------------------------------------------------------------------------------------------
   TEST_F(TestWin32Clipboard, testUnixNewLine)
   {
-    Clipboard & c = Clipboard::getInstance();
+    Clipboard & c = Clipboard::GetInstance();
 
     static const std::string SAMPLE_TEXT = "1\n2\n3\n4\n5";
-    c.setText(SAMPLE_TEXT);
+    c.SetText(SAMPLE_TEXT);
 
     std::string text;
-    bool status = c.getAsText(text);
+    bool status = c.GetAsText(text);
     ASSERT_TRUE( status );
 
     ASSERT_EQ( SAMPLE_TEXT, text ) << "Failed setting clipboard to value '" << SAMPLE_TEXT << "'. The returned value is '" << text << "'.";
@@ -166,13 +166,13 @@ namespace win32clipboard { namespace test
   //--------------------------------------------------------------------------------------------------
   TEST_F(TestWin32Clipboard, testWindowsNewLine)
   {
-    Clipboard & c = Clipboard::getInstance();
+    Clipboard & c = Clipboard::GetInstance();
 
     static const std::string SAMPLE_TEXT = "1\r\n2\r\n3\r\n4\r\n5";
-    c.setText(SAMPLE_TEXT);
+    c.SetText(SAMPLE_TEXT);
 
     std::string text;
-    bool status = c.getAsText(text);
+    bool status = c.GetAsText(text);
     ASSERT_TRUE( status );
 
     ASSERT_EQ( SAMPLE_TEXT, text ) << "Failed setting clipboard to value '" << SAMPLE_TEXT << "'. The returned value is '" << text << "'.";
@@ -180,7 +180,7 @@ namespace win32clipboard { namespace test
   //--------------------------------------------------------------------------------------------------
   TEST_F(TestWin32Clipboard, testDragDropFiles)
   {
-    Clipboard & c = Clipboard::getInstance();
+    Clipboard & c = Clipboard::GetInstance();
 
     static const char * values[] = {
       "C:\\Windows\\System32\\notepad.exe",
@@ -199,12 +199,12 @@ namespace win32clipboard { namespace test
 
     //
     static const Clipboard::DragDropType input_type = Clipboard::DragDropCopy;
-    bool status = c.setDragDropFiles(input_type, input_files);
+    bool status = c.SetDragDropFiles(input_type, input_files);
     ASSERT_TRUE( status );
 
     Clipboard::DragDropType output_type;
     Clipboard::StringVector output_files;
-    status = c.getAsDragDropFiles(output_type, output_files);
+    status = c.GetAsDragDropFiles(output_type, output_files);
     ASSERT_TRUE( status );
 
     ASSERT_EQ( (int)input_type, (int)output_type );
