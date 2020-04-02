@@ -115,7 +115,7 @@ endif()
 # The specified values will not be exported.
 set( WIN32CLIPBOARD_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include )
 include_directories(${WIN32CLIPBOARD_INCLUDE_DIR}                # public header files, for source code.
-                    ${CMAKE_BINARY_DIR}/include/win32clipboard   # for ${WIN32CLIPBOARD_VERSION_HEADER} and ${WIN32CLIPBOARD_CONFIG_HEADER} generated files.
+                    ${CMAKE_BINARY_DIR}/include                  # for ${WIN32CLIPBOARD_VERSION_HEADER} and ${WIN32CLIPBOARD_CONFIG_HEADER} generated files.
 )
 
 # unit tests

@@ -28,6 +28,8 @@
 #include <vector>
 #include <string>
 
+#include "win32clipboard/config.h"
+
 namespace win32clipboard
 {
   //global functions
