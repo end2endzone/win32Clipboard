@@ -63,7 +63,7 @@ MESSAGE( STATUS "CMAKE_SYSTEM_PROCESSOR:   " ${CMAKE_SYSTEM_PROCESSOR} )
 # Product version according to Semantic Versioning v2.0.0 https://semver.org/
 set(WIN32CLIPBOARD_VERSION_MAJOR 0)
 set(WIN32CLIPBOARD_VERSION_MINOR 3)
-set(WIN32CLIPBOARD_VERSION_PATCH 0)
+set(WIN32CLIPBOARD_VERSION_PATCH 1)
 set(WIN32CLIPBOARD_VERSION ${WIN32CLIPBOARD_VERSION_MAJOR}.${WIN32CLIPBOARD_VERSION_MINOR}.${WIN32CLIPBOARD_VERSION_PATCH})
 
 # read license file
@@ -115,7 +115,7 @@ endif()
 # The specified values will not be exported.
 set( WIN32CLIPBOARD_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include )
 include_directories(${WIN32CLIPBOARD_INCLUDE_DIR}                # public header files, for source code.
-                    ${CMAKE_BINARY_DIR}/include/win32clipboard   # for ${WIN32CLIPBOARD_VERSION_HEADER} and ${WIN32CLIPBOARD_CONFIG_HEADER} generated files.
+                    ${CMAKE_BINARY_DIR}/include                  # for ${WIN32CLIPBOARD_VERSION_HEADER} and ${WIN32CLIPBOARD_CONFIG_HEADER} generated files.
 )
 
 # unit tests
